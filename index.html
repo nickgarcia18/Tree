@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Tree — Daily Stock Pullbacks </title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0F1B14;
+    --surface:#16241C;
+    --surface-2:#1C2E22;
+    --gold:#C9A227;
+    --moss:#4A7856;
+    --text:#E8E4D9;
+    --muted:#8B9A8C;
+    --line:#2C4032;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:720px;margin:0 auto;padding:0 24px 120px;position:relative;}
+
+  header{
+    padding:72px 0 56px;
+    text-align:center;
+  }
+  header .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    letter-spacing:0.18em;
+    color:var(--moss);
+    text-transform:uppercase;
+    margin-bottom:18px;
+  }
+  header h1{
+    font-family:'Fraunces',serif;
+    font-optical-sizing:auto;
+    font-weight:500;
+    font-size:clamp(40px,7vw,64px);
+    margin:0 0 18px;
+    letter-spacing:-0.01em;
+  }
+  header p{
+    color:var(--muted);
+    font-size:16px;
+    line-height:1.6;
+    max-width:440px;
+    margin:0 auto;
+  }
+
+  /* Roots */
+  .roots{
+    display:flex;
+    gap:14px;
+    justify-content:center;
+    flex-wrap:wrap;
+    margin-top:44px;
+  }
+  .root-card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:3px;
+    padding:16px 20px;
+    min-width:130px;
+    text-align:center;
+  }
+  .root-card .tag{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    letter-spacing:0.1em;
+    color:var(--gold);
+    text-transform:uppercase;
+    display:block;
+    margin-bottom:8px;
+  }
+  .root-card .ticker{
+    font-family:'JetBrains Mono',monospace;
+    font-size:20px;
+    font-weight:700;
+    color:var(--text);
+  }
+
+  /* Trunk */
+  .trunk-section{
+    position:relative;
+    margin:56px 0;
+  }
+  .trunk-line{
+    width:2px;
+    background:var(--line);
+    margin:0 auto;
+    position:relative;
+  }
+  .trunk-top{height:56px;}
+  .trunk-bottom{min-height:0;}
+
+  /* Branches - Tree Visualization */
+  .branches-container{position:relative;}
+  .branch-row{
+    position:relative;
+    display:flex;
+    align-items:center;
+    min-height:auto;
+  }
+  .branch-row .stem{
+    position:absolute;
+    left:50%;
+    top:0;
+    bottom:0;
+    width:2px;
+    background:var(--line);
+    transform:translateX(-1px);
+  }
+  .branch-row.last .stem{display:none;}
+
+  .connector{
+    position:absolute;
+    top:50%;
+    height:2px;
+    background:var(--line);
+    width:64px;
+  }
+  .branch-row.right .connector{left:50%;}
+  .branch-row.left .connector{right:50%;}
+
+  .node-dot{
+    position:absolute;
+    top:50%;
+    left:50%;
+    width:10px;
+    height:10px;
+    border-radius:50%;
+    background:var(--gold);
+    transform:translate(-50%,-50%);
+    box-shadow:0 0 0 4px rgba(201,162,39,0.15);
+    z-index:5;
+  }
+
+  .branch-card-wrapper{
+    position:relative;
+    width:calc(50% - 96px);
+    padding-top:80px;
+  }
+  .branch-row.right .branch-card-wrapper{margin-left:calc(50% + 64px);}
+  .branch-row.left .branch-card-wrapper{margin-right:calc(50% + 64px);}
+
+  .branch-card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:3px;
+    padding:18px 20px;
+  }
+
+  .branch-card .day{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    letter-spacing:0.1em;
+    color:var(--muted);
+    text-transform:uppercase;
+    margin-bottom:10px;
+  }
+  .branch-card .ticker-row{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+    margin-bottom:12px;
+  }
+  .branch-card .ticker{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;
+    font-size:19px;
+    color:var(--text);
+  }
+  .branch-card .name{
+    font-size:13px;
+    color:var(--muted);
+  }
+  .branch-card .stats{
+    display:flex;
+    gap:18px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    margin-bottom:14px;
+  }
+  .branch-card .stats .stat b{
+    display:block;
+    color:var(--text);
+    font-size:13px;
+  }
+  .branch-card .stats .stat span{
+    color:var(--muted);
+    font-size:10px;
+    letter-spacing:0.05em;
+    text-transform:uppercase;
+  }
+
+  .vote-buttons{
+    display:flex;
+    gap:8px;
+    margin-bottom:14px;
+    border-bottom:1px solid var(--line);
+    padding-bottom:12px;
+  }
+  .vote-btn{
+    flex:1;
+    padding:8px 12px;
+    border:1px solid var(--line);
+    background:transparent;
+    color:var(--text);
+    border-radius:3px;
+    cursor:pointer;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    font-weight:600;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    transition:all 0.2s;
+  }
+  .vote-btn:hover{border-color:var(--text);}
+  .vote-btn.bull{color:#4CAF50;}
+  .vote-btn.bull:hover{background:rgba(76,175,80,0.1);border-color:#4CAF50;}
+  .vote-btn.bull.active{background:#4CAF50;color:var(--bg);}
+  .vote-btn.bear{color:#FF6B6B;}
+  .vote-btn.bear:hover{background:rgba(255,107,107,0.1);border-color:#FF6B6B;}
+  .vote-btn.bear.active{background:#FF6B6B;color:var(--bg);}
+
+  .comments-list{
+    margin-top:12px;
+    padding-top:12px;
+    border-top:1px solid var(--line);
+  }
+  .comment{
+    background:var(--surface-2);
+    border-left:2px solid var(--moss);
+    padding:8px 12px;
+    margin-bottom:8px;
+    border-radius:2px;
+    font-size:12px;
+    line-height:1.4;
+  }
+  .comment-text{
+    color:var(--text);
+    word-break:break-word;
+  }
+  .comment-meta{
+    color:var(--muted);
+    font-size:10px;
+    margin-top:4px;
+  }
+
+  .comment-form{
+    margin-top:12px;
+    padding-top:12px;
+    border-top:1px solid var(--line);
+  }
+  .comment-input{
+    width:100%;
+    background:var(--surface-2);
+    border:1px solid var(--line);
+    color:var(--text);
+    padding:8px 12px;
+    border-radius:3px;
+    font-family:'Inter',sans-serif;
+    font-size:12px;
+    resize:none;
+    max-height:60px;
+    margin-bottom:8px;
+  }
+  .comment-input::placeholder{
+    color:var(--muted);
+  }
+  .comment-input:focus{
+    outline:none;
+    border-color:var(--gold);
+    box-shadow:0 0 0 2px rgba(201,162,39,0.2);
+  }
+  .comment-submit{
+    width:100%;
+    background:var(--moss);
+    color:var(--text);
+    border:none;
+    padding:8px 12px;
+    border-radius:3px;
+    font-family:'Inter',sans-serif;
+    font-size:11px;
+    font-weight:600;
+    cursor:pointer;
+    transition:all 0.2s;
+  }
+  .comment-submit:hover{background:var(--gold);color:var(--bg);}
+  .comment-char-count{
+    font-size:10px;
+    color:var(--muted);
+    margin-top:4px;
+  }
+
+  footer{
+    margin-top:80px;
+    padding-top:32px;
+    border-top:1px solid var(--line);
+    text-align:center;
+  }
+  footer .disclaimer{
+    font-size:12px;
+    line-height:1.7;
+    color:var(--muted);
+    max-width:480px;
+    margin:0 auto 20px;
+  }
+  footer .updated{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--line);
+    letter-spacing:0.05em;
+  }
+
+  @media (max-width:600px){
+    .branch-card-wrapper{width:calc(100% - 56px);}
+    .branch-row.right .branch-card-wrapper,
+    .branch-row.left .branch-card-wrapper{margin-left:56px;margin-right:0;}
+    .connector{width:32px;left:20px;}
+    .branch-row.left .connector{right:auto;left:20px;}
+    .node-dot{left:20px;}
+    .branch-row .stem{left:20px;}
+  }
+
+  .section-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:var(--gold);
+    text-align:center;
+    margin-top:80px;
+    margin-bottom:8px;
+  }
+  .section-sub{
+    text-align:center;
+    color:var(--muted);
+    font-size:13px;
+    max-width:420px;
+    margin:0 auto 24px;
+    line-height:1.6;
+  }
+
+  .donate-grid{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:12px}
+  .donate-btn{background:var(--gold);color:#0a0a04;padding:10px 14px;border-radius:6px;border:none;font-weight:700;cursor:pointer;text-decoration:none}
+  .donate-crypto{background:transparent;border:1px solid var(--line);padding:8px 12px;border-radius:6px;color:var(--text)}
+
+  .small-muted{color:var(--muted);font-size:13px}
+
+  #comments-embed{max-width:640px;margin:0 auto;}
+
+  .supabase-notice{
+    background:var(--surface-2);
+    border-left:3px solid var(--gold);
+    padding:12px 16px;
+    margin:24px 0;
+    border-radius:3px;
+  }
+  .supabase-notice p{
+    margin:0;
+    font-size:12px;
+    line-height:1.5;
+  }
+  .supabase-notice a{
+    color:var(--gold);
+    text-decoration:none;
+  }
+  .supabase-notice a:hover{text-decoration:underline;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <span class="eyebrow">Est. Day 1</span>
+    <h1>The Tree</h1>
+    <p>One stock pick per day. Every pick clears the same bar: a market cap above $50 billion, currently trading 18–25% below its 52-week high. Once added, picks are never removed — the tree grows. Vote bull or bear, leave comments (up to 200 characters). Nothing disappears.</p>
+  </header>
+
+  <div class="roots" id="roots">
+    <div class="root-card"><span class="tag">Root</span><div class="ticker">UBER</div></div>
+    <div class="root-card"><span class="tag">Root</span><div class="ticker">WM</div></div>
+    <div class="root-card"><span class="tag">Root</span><div class="ticker">MCD</div></div>
+    <div class="root-card"><span class="tag">Root</span><div class="ticker">KO</div></div>
+  </div>
+
+  <!-- Growing Tree Section -->
+  <div class="trunk-section">
+    <div class="trunk-line trunk-top"></div>
+    
+    <div class="branches-container" id="branches-container">
+      <!-- Branches will be dynamically inserted here -->
+    </div>
+
+    <div class="trunk-line trunk-bottom" id="trunk-bottom"></div>
+  </div>
+
+  <!-- Setup Notice -->
+  <div class="supabase-notice" id="setup-notice" style="display:none;">
+    <p><strong>⚙️ Setup needed:</strong> To enable voting and comments, <a href="https://supabase.com" target="_blank">create a free Supabase account</a>, then follow the setup guide in the repo README. Voting and comments will work once configured.</p>
+  </div>
+
+  <!-- Donations / Support -->
+  <div class="support-section">
+    <div class="section-label">Support The Tree</div>
+    <p class="section-sub">If you find The Tree useful, consider supporting the project. Donations keep the site running and help fund new features.</p>
+    <div class="donate-grid">
+      <a class="donate-btn" href="https://www.buymeacoffee.com/YOUR_HANDLE" target="_blank" rel="noopener">Buy Me a Coffee</a>
+      <a class="donate-btn" href="https://paypal.me/YOUR_PAYPAL" target="_blank" rel="noopener">PayPal</a>
+      <button class="donate-crypto" onclick="toggleCrypto()">Crypto Addresses</button>
+    </div>
+    <div id="crypto-list" style="display:none;margin-top:10px;text-align:center;color:var(--muted)">
+      <p style="margin:6px 0;">BTC: <code>1PGaP9BLF8qbZoYMYRXuK4FygJdGRJo2Kt</code></p>
+      <p style="margin:6px 0;">ETH: <code>your-ethereum-address-here</code></p>
+      <p style="margin:6px 0;">USDC (ERC-20): <code>your-usdc-address-here</code></p>
+      <p style="margin:6px 0;font-size:12px;color:var(--line)">Replace these with your addresses or remove if you don't accept crypto.</p>
+    </div>
+  </div>
+
+  <footer>
+    <p class="disclaimer">For informational purposes only. Not investment advice. Selection is based on mechanical criteria — market cap and price relative to 52-week high — not analysis of company fundamentals, news, or future performance. The model estimate is illustrative only, uses a fixed assumed volatility for all stocks, and is not a real forecast.</p>
+    <p class="updated">Last updated — <span id="last-updated">2026-07-21</span></p>
+  </footer>
+
+</div>
+
+<!-- ===== TREE STORAGE & RENDERING ===== -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const ROOT_TICKERS = ['UBER','WM','MCD','KO'];
+  const FINNHUB_API_KEY = "d9fvml9r01qggl8m0t10d9fvml9r01qggl8m0t1g";
+  const COMMENT_CHAR_LIMIT = 200;
+
+  const INDUSTRY_MAPPING = {
+    'UBER': ['LYFT', 'DASH', 'SPOT'],
+    'WM': ['RSG', 'GFL', 'WSTE'],
+    'MCD': ['YUM', 'CMG', 'DRI'],
+    'KO': ['PEP', 'MO', 'DEO']
+  };
+
+  // Supabase setup
+  const SUPABASE_URL = "YOUR_SUPABASE_URL";
+  const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+  let supabaseClient = null;
+  const supabaseConfigured = SUPABASE_URL !== "YOUR_SUPABASE_URL";
+
+  if (supabaseConfigured) {
+    try {
+      supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    } catch (e) { 
+      console.log("Supabase initialization failed"); 
+    }
+  } else {
+    document.getElementById('setup-notice').style.display = 'block';
+  }
+
+  // Load picks from localStorage
+  function loadPicks(){
+    const stored = localStorage.getItem('treePicks');
+    return stored ? JSON.parse(stored) : [];
+  }
+
+  // Save picks to localStorage
+  function savePicks(picks){
+    localStorage.setItem('treePicks', JSON.stringify(picks));
+  }
+
+  // Check if today's date already has a pick
+  function getTodayDateKey(){
+    const now = new Date();
+    return now.toISOString().split('T')[0]; // YYYY-MM-DD format
+  }
+
+  async function fetchQuotesFinnhub(tickers){
+    const results = [];
+    for (const t of tickers) {
+      try {
+        const [quoteRes, profileRes, metricRes] = await Promise.all([
+          fetch(`https://finnhub.io/api/v1/quote?symbol=${t}&token=${FINNHUB_API_KEY}`),
+          fetch(`https://finnhub.io/api/v1/stock/profile2?symbol=${t}&token=${FINNHUB_API_KEY}`),
+          fetch(`https://finnhub.io/api/v1/stock/metric?symbol=${t}&metric=all&token=${FINNHUB_API_KEY}`)
+        ]);
+        const quote = await quoteRes.json();
+        const profile = await profileRes.json();
+        const metric = await metricRes.json();
+        results.push({
+          symbol: t,
+          shortName: profile.name || '',
+          regularMarketPrice: quote.c || null,
+          fiftyTwoWeekHigh: metric?.metric?.['52WeekHigh'] || null,
+          marketCap: profile.marketCapitalization ? profile.marketCapitalization * 1e6 : null,
+          industry: profile.finnhubIndustry || ''
+        });
+      } catch (e) {
+        console.warn('Finnhub fetch failed for', t, e);
+      }
+    }
+    return results;
+  }
+
+  async function fetchQuotes(tickers){
+    if (FINNHUB_API_KEY !== "YOUR_FINNHUB_API_KEY") {
+      const finnhubResults = await fetchQuotesFinnhub(tickers);
+      if (finnhubResults.length > 0) return finnhubResults;
+    }
+    return [];
+  }
+
+  function latticeHitProbability(S0, target, sigma, mu, days, stepsPerDay=1){
+    const dt = (1/252) / stepsPerDay;
+    const N = Math.max(1, Math.round(days * stepsPerDay));
+    const u = Math.exp(sigma * Math.sqrt(dt));
+    const d = 1 / u;
+    let p = (Math.exp(mu*dt) - d) / (u - d);
+    p = Math.max(0, Math.min(1, p));
+    let dp = new Array(N+1).fill(0);
+    dp[0] = 1;
+    let hitProb = 0;
+    for(let t=1;t<=N;t++){
+      const next = new Array(N+1).fill(0);
+      for(let k=0;k<=t-1;k++){
+        const prob = dp[k];
+        next[k+1] += prob * p;
+        next[k] += prob * (1-p);
+      }
+      for(let k=0;k<=t;k++){
+        const price = S0 * Math.pow(u, k) * Math.pow(d, t-k);
+        if(price >= target){
+          hitProb += next[k];
+          next[k] = 0;
+        }
+      }
+      dp = next;
+    }
+    return Math.min(1, Math.max(0, hitProb));
+  }
+
+  function formatNumber(n){
+    if(n === null || n === undefined || isNaN(n)) return '—';
+    if(Math.abs(n) >= 1e12) return '$' + (n/1e12).toFixed(2) + 'T';
+    if(Math.abs(n) >= 1e9) return '$' + (n/1e9).toFixed(2) + 'B';
+    if(Math.abs(n) >= 1e6) return '$' + (n/1e6).toFixed(2) + 'M';
+    return '$' + n.toFixed(2);
+  }
+
+  async function loadVotes(pickId){
+    if (!supabaseClient) return { bull: 0, bear: 0 };
+    try {
+      const { data, error } = await supabaseClient
+        .from('pick_votes')
+        .select('bull_count, bear_count')
+        .eq('pick_id', pickId)
+        .single();
+      if (error) return { bull: 0, bear: 0 };
+      return { bull: data?.bull_count || 0, bear: data?.bear_count || 0 };
+    } catch (e) {
+      return { bull: 0, bear: 0 };
+    }
+  }
+
+  async function loadComments(pickId){
+    if (!supabaseClient) return [];
+    try {
+      const { data, error } = await supabaseClient
+        .from('pick_comments')
+        .select('*')
+        .eq('pick_id', pickId)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (error) return [];
+      return data || [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  async function castVote(pickId, voteType){
+    if (!supabaseClient) {
+      alert("Voting requires Supabase setup. See the setup notice above.");
+      return;
+    }
+
+    try {
+      const { data, error } = await supabaseClient
+        .from('pick_votes')
+        .select('*')
+        .eq('pick_id', pickId)
+        .single();
+
+      if (error && error.code === 'PGRST116') {
+        // Row doesn't exist, create it
+        await supabaseClient
+          .from('pick_votes')
+          .insert({
+            pick_id: pickId,
+            bull_count: voteType === 'bull' ? 1 : 0,
+            bear_count: voteType === 'bear' ? 1 : 0
+          });
+      } else if (!error && data) {
+        // Row exists, increment
+        const newBull = voteType === 'bull' ? (data.bull_count || 0) + 1 : data.bull_count || 0;
+        const newBear = voteType === 'bear' ? (data.bear_count || 0) + 1 : data.bear_count || 0;
+        await supabaseClient
+          .from('pick_votes')
+          .update({ bull_count: newBull, bear_count: newBear })
+          .eq('pick_id', pickId);
+      }
+      updateVoteDisplay(pickId);
+    } catch (e) {
+      console.error('Vote error:', e);
+    }
+  }
+
+  async function submitComment(pickId){
+    if (!supabaseClient) {
+      alert("Comments require Supabase setup. See the setup notice above.");
+      return;
+    }
+
+    const textarea = document.querySelector(`[data-pick-id="${pickId}"] .comment-input`);
+    if (!textarea) return;
+
+    const text = textarea.value.trim();
+    if (!text) return;
+    if (text.length > COMMENT_CHAR_LIMIT) return;
+
+    try {
+      await supabaseClient
+        .from('pick_comments')
+        .insert({
+          pick_id: pickId,
+          text: text,
+          created_at: new Date().toISOString()
+        });
+      
+      textarea.value = '';
+      updateCharCount(pickId);
+      loadAndRenderComments(pickId);
+    } catch (e) {
+      console.error('Comment error:', e);
+    }
+  }
+
+  function updateCharCount(pickId){
+    const textarea = document.querySelector(`[data-pick-id="${pickId}"] .comment-input`);
+    const counter = document.querySelector(`[data-pick-id="${pickId}"] .comment-char-count`);
+    if (textarea && counter) {
+      const remaining = COMMENT_CHAR_LIMIT - textarea.value.length;
+      counter.textContent = `${textarea.value.length} / ${COMMENT_CHAR_LIMIT}`;
+    }
+  }
+
+  async function loadAndRenderComments(pickId){
+    const comments = await loadComments(pickId);
+    const commentsList = document.querySelector(`[data-pick-id="${pickId}"] .comments-list`);
+    
+    if (!commentsList) return;
+
+    const commentsHTML = comments.map(c => {
+      const time = new Date(c.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      return `
+        <div class="comment">
+          <div class="comment-text">${c.text}</div>
+          <div class="comment-meta">${time}</div>
+        </div>
+      `;
+    }).join('');
+
+    const existingComments = commentsList.querySelector('.comments-display');
+    if (existingComments) {
+      existingComments.innerHTML = commentsHTML;
+    }
+  }
+
+  async function updateVoteDisplay(pickId){
+    const votes = await loadVotes(pickId);
+    const bullBtn = document.querySelector(`[data-pick-id="${pickId}"] .vote-btn.bull`);
+    const bearBtn = document.querySelector(`[data-pick-id="${pickId}"] .vote-btn.bear`);
+    const bullCount = document.querySelector(`[data-pick-id="${pickId}"] .bull-count`);
+    const bearCount = document.querySelector(`[data-pick-id="${pickId}"] .bear-count`);
+    
+    if (bullBtn && bullCount) bullCount.textContent = votes.bull;
+    if (bearBtn && bearCount) bearCount.textContent = votes.bear;
+  }
+
+  async function renderTree(){
+    const picks = loadPicks();
+    const container = document.getElementById('branches-container');
+    container.innerHTML = '';
+
+    for (let index = 0; index < picks.length; index++) {
+      const pick = picks[index];
+      const isRight = index % 2 === 0;
+      const isLast = index === picks.length - 1;
+
+      const row = document.createElement('div');
+      row.className = `branch-row ${isRight ? 'right' : 'left'} ${isLast ? 'last' : ''}`;
+      row.setAttribute('data-pick-id', pick.id);
+      row.style.paddingBottom = '40px';
+
+      const stem = document.createElement('div');
+      stem.className = 'stem';
+      row.appendChild(stem);
+
+      const connector = document.createElement('div');
+      connector.className = 'connector';
+      row.appendChild(connector);
+
+      const nodeDot = document.createElement('div');
+      nodeDot.className = 'node-dot';
+      row.appendChild(nodeDot);
+
+      const cardWrapper = document.createElement('div');
+      cardWrapper.className = 'branch-card-wrapper';
+
+      const card = document.createElement('div');
+      card.className = 'branch-card';
+      
+      const votes = supabaseConfigured ? await loadVotes(pick.id) : { bull: 0, bear: 0 };
+      const comments = supabaseConfigured ? await loadComments(pick.id) : [];
+
+      const commentsHTML = comments.map(c => {
+        const time = new Date(c.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        return `
+          <div class="comment">
+            <div class="comment-text">${c.text}</div>
+            <div class="comment-meta">${time}</div>
+          </div>
+        `;
+      }).join('');
+
+      card.innerHTML = `
+        <div class="day">Day ${index + 1} · ${pick.dateDisplay}</div>
+        <div class="ticker-row">
+          <span class="ticker">${pick.symbol}</span>
+          <span class="name">${pick.shortName}</span>
+        </div>
+        <div class="stats">
+          <div class="stat"><b>${formatNumber(pick.marketCap)}</b><span>Mkt Cap</span></div>
+          <div class="stat"><b>${pick.belowHigh.toFixed(1)}%</b><span>Below High</span></div>
+        </div>
+        <div class="vote-buttons">
+          <button class="vote-btn bull" onclick="castVote('${pick.id}', 'bull')">🐂 <span class="bull-count">${votes.bull}</span></button>
+          <button class="vote-btn bear" onclick="castVote('${pick.id}', 'bear')">🐻 <span class="bear-count">${votes.bear}</span></button>
+        </div>
+        ${supabaseConfigured ? `
+          <div class="comments-list">
+            <div class="comments-display">${commentsHTML}</div>
+            <div class="comment-form">
+              <textarea class="comment-input" maxlength="${COMMENT_CHAR_LIMIT}" placeholder="Add a comment..." onkeyup="updateCharCount('${pick.id}')"></textarea>
+              <div class="comment-char-count">0 / ${COMMENT_CHAR_LIMIT}</div>
+              <button class="comment-submit" onclick="submitComment('${pick.id}')">Post</button>
+            </div>
+          </div>
+        ` : ''}
+      `;
+      cardWrapper.appendChild(card);
+      row.appendChild(cardWrapper);
+
+      container.appendChild(row);
+    }
+  }
+
+  async function selectTodaysPick(){
+    // Collect all related tickers
+    let allRelatedTickers = new Set();
+    for (const root of ROOT_TICKERS) {
+      const related = INDUSTRY_MAPPING[root] || [];
+      related.forEach(t => allRelatedTickers.add(t));
+    }
+    
+    const tickersToCheck = Array.from(allRelatedTickers);
+    const quotes = await fetchQuotes(tickersToCheck);
+    
+    if(!quotes || quotes.length === 0){
+      console.log('Unable to fetch quotes');
+      return null;
+    }
+
+    // Get existing picks to avoid duplicates
+    const existingPicks = loadPicks();
+    const existingTickers = existingPicks.map(p => p.symbol);
+
+    // Filter by criteria and calculate probabilities
+    const candidates = quotes.map(q => {
+      const marketCapB = (q.marketCap || 0) / 1e9;
+      const belowHigh = q.fiftyTwoWeekHigh && q.regularMarketPrice 
+        ? ((q.fiftyTwoWeekHigh - q.regularMarketPrice) / q.fiftyTwoWeekHigh) * 100 
+        : null;
+      
+      const S0 = q.regularMarketPrice || null;
+      const high52 = q.fiftyTwoWeekHigh || null;
+      const sigma = 0.35;
+      const mu = 0.0;
+      const days = 30;
+      const target = high52 ? high52 * 0.95 : null;
+      let hitProb = null;
+      if(S0 && target && sigma){
+        hitProb = latticeHitProbability(S0, target, sigma, mu, days);
+      }
+
+      return {
+        ...q,
+        marketCapB,
+        belowHigh,
+        hitProb,
+        isValid: marketCapB >= 50 && belowHigh && belowHigh >= 18 && belowHigh <= 25
+      };
+    }).filter(c => c.isValid && !existingTickers.includes(c.symbol));
+
+    if(candidates.length === 0){
+      console.log('No new qualified picks');
+      return null;
+    }
+
+    // Sort by probability and pick the highest
+    candidates.sort((a, b) => (b.hitProb || 0) - (a.hitProb || 0));
+    return candidates[0];
+  }
+
+  async function checkAndAddNewPick(){
+    const picks = loadPicks();
+    const today = getTodayDateKey();
+
+    // Check if today's pick already exists
+    if(picks.length > 0 && picks[picks.length - 1].date === today){
+      console.log('Pick already added for today');
+      return;
+    }
+
+    const pick = await selectTodaysPick();
+    if(pick){
+      const now = new Date();
+      const dateDisplay = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const pickId = `${pick.symbol}-${today}`;
+
+      picks.push({
+        id: pickId,
+        symbol: pick.symbol,
+        shortName: pick.shortName,
+        marketCap: pick.marketCap,
+        belowHigh: pick.belowHigh,
+        hitProb: pick.hitProb,
+        price: pick.regularMarketPrice,
+        high52: pick.fiftyTwoWeekHigh,
+        date: today,
+        dateDisplay: dateDisplay,
+        timestamp: Date.now()
+      });
+
+      savePicks(picks);
+      console.log(`Added new pick: ${pick.symbol}`);
+    }
+
+    renderTree();
+  }
+
+  function toggleCrypto(){
+    const el = document.getElementById('crypto-list');
+    if (!el) return;
+    el.style.display = (el.style.display === 'none') ? 'block' : 'none';
+  }
+
+  window.addEventListener('load', () => {
+    renderTree();
+    checkAndAddNewPick();
+    
+    // Check for new picks every hour
+    setInterval(checkAndAddNewPick, 60 * 60 * 1000);
+
+    // Update last-updated timestamp
+    const now = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    document.getElementById('last-updated').textContent = now;
+  });
+</script>
+
+</body>
+</html>
